@@ -20,10 +20,16 @@ platform :ios do
     p8 = ENV.fetch("APP_STORE_CONNECT_KEY").strip
     p8_is_base64 = !p8.include?("BEGIN PRIVATE KEY")
 
-    basic_auth = ENV["MATCH_GIT_BASIC_AUTHORIZATION"].to_s.strip
-    if basic_auth.include?(":") # "계정:PAT" 원문으로 등록한 경우 자동 인코딩
-      ENV["MATCH_GIT_BASIC_AUTHORIZATION"] = Base64.strict_encode64(basic_auth)
+    # "계정:PAT" 원문이든 base64든 허용하고, 줄바꿈이 섞인 base64(-w0 없이 인코딩)도 정규화
+    basic_auth = ENV["MATCH_GIT_BASIC_AUTHORIZATION"].to_s.gsub(/\s+/, "")
+    if basic_auth.include?(":")
+      basic_auth = Base64.strict_encode64(basic_auth)
+    elsif !basic_auth.empty?
+      decoded = Base64.decode64(basic_auth).strip
+      UI.user_error!("MATCH_GIT_BASIC_AUTHORIZATION 형식이 잘못됨 (계정:PAT 의 base64여야 함)") unless decoded.include?(":")
+      basic_auth = Base64.strict_encode64(decoded)
     end
+    ENV["MATCH_GIT_BASIC_AUTHORIZATION"] = basic_auth
 
     api_key = app_store_connect_api_key(
       key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID").strip,
@@ -33,10 +39,13 @@ platform :ios do
     )
 
     # 배포 인증서 + 프로비저닝 프로파일 생성/동기화 (인증서 저장 repo 사용)
+    match_git_url = ENV.fetch("MATCH_GIT_URL").strip
+    UI.user_error!("MATCH_GIT_URL은 https://... 형식이어야 합니다: #{match_git_url}") unless match_git_url.start_with?("http")
+
     match(
       type: "appstore",
       app_identifier: BUNDLE_ID,
-      git_url: ENV.fetch("MATCH_GIT_URL"),
+      git_url: match_git_url,
       api_key: api_key,
       readonly: false
     )
