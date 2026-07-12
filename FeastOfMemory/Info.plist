@@ -8,5 +8,8 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<!-- 표준 암호화(TLS)만 사용 — TestFlight 수출 규정 질문 생략 -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

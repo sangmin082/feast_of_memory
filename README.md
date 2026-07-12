@@ -59,6 +59,46 @@ npm test         # 통합 테스트
 - 같은 Wi-Fi: `ws://<맥의 IP>:8080` (시뮬레이터 2개로 테스트할 땐 `ws://localhost:8080`)
 - 외부 공개 시에는 wss(TLS) 뒤에 두고 `Info.plist`의 ATS 예외를 제거하는 것을 권장합니다.
 
+## TestFlight 배포 (Mac 불필요 — GitHub Actions)
+
+`.github/workflows/testflight.yml`이 macOS 러너에서 빌드·서명 후 TestFlight에 업로드합니다.
+인증서/프로비저닝 프로파일은 [fastlane match](https://docs.fastlane.tools/actions/match/)가
+CI에서 자동 생성해 별도 private repo에 보관하므로 Mac이 전혀 필요 없습니다.
+
+### 사전 준비 (1회)
+
+1. **Apple Developer Program 가입** — [developer.apple.com](https://developer.apple.com) (연 $99)
+2. **번들 ID 등록** — Certificates, Identifiers & Profiles → Identifiers → `+` → App IDs → `com.feastofmemory.game`
+   (다른 ID를 쓰려면 `project.pbxproj`의 `PRODUCT_BUNDLE_IDENTIFIER`와 `fastlane/Fastfile`·`Appfile`의 `BUNDLE_ID`를 함께 수정)
+3. **App Store Connect에 앱 생성** — [appstoreconnect.apple.com](https://appstoreconnect.apple.com) → 나의 앱 → `+` → 위 번들 ID 선택
+4. **App Store Connect API 키 생성** — Users and Access → Integrations → App Store Connect API → Team Keys → `+`
+   (Role: **App Manager**) → Issuer ID·Key ID 기록, `.p8` 파일 다운로드(단 한 번만 가능!)
+5. **Team ID 확인** — developer.apple.com → Membership 페이지
+6. **인증서 보관용 private repo 생성** — 예: `ios-certificates` (빈 저장소)
+7. **GitHub PAT 발급** — github.com → Settings → Developer settings → Personal access tokens (classic) → `repo` 권한
+
+### GitHub Secrets 등록
+
+이 저장소 → Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret | 값 |
+|---|---|
+| `APP_STORE_CONNECT_KEY_ID` | API 키의 Key ID |
+| `APP_STORE_CONNECT_ISSUER_ID` | API 키의 Issuer ID |
+| `APP_STORE_CONNECT_KEY` | `.p8` 파일을 **base64 인코딩**한 문자열 (`base64 -w0 AuthKey_XXX.p8`) |
+| `APPLE_TEAM_ID` | Team ID (예: `AB12CD34EF`) |
+| `MATCH_GIT_URL` | 인증서 repo 주소 (`https://github.com/<계정>/ios-certificates.git`) |
+| `MATCH_GIT_BASIC_AUTHORIZATION` | `echo -n "<깃허브계정>:<PAT>" \| base64 -w0` 결과 |
+| `MATCH_PASSWORD` | 인증서 암호화용 비밀번호 (아무거나 정해서 기억) |
+
+### 실행
+
+Actions 탭 → **TestFlight** → Run workflow. 성공하면 10~30분 뒤 App Store Connect →
+TestFlight 탭에 빌드가 나타납니다. 내부 테스팅 그룹에 본인을 추가하고 iPhone의
+**TestFlight 앱**에서 설치하세요.
+
+> 💡 private repo의 macOS 러너는 분당 과금 배율이 10배라 무료 한도(월 2,000분)로는 매달 약 15~20회 빌드가 가능합니다. repo를 public으로 하면 무제한 무료입니다.
+
 ## 구현 노트
 
 - **엔진 검증**: 나무위키에 기록된 실제 대국 20수를 리플레이해 배치·판정·스코어가 모두 일치함을 확인했습니다. (참고: 위키 표의 9턴 스코어 "7:2"는 오기 — 홍진호는 9턴 연속 성공이므로 7:1이 정합)
