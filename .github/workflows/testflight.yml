@@ -1,7 +1,9 @@
 name: TestFlight
 
 on:
-  workflow_dispatch: # Actions 탭에서 수동 실행
+  workflow_dispatch: # Actions 탭에서 수동 실행 (main에 머지된 후 사용 가능)
+  push:
+    branches: [claude/death-game-ios-plan-7jxacu] # 임시: 파이프라인 검증용
 
 jobs:
   build-and-upload:
