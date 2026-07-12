@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var soloGame: GameViewModel?
     @State private var showRules = false
     @State private var showOnlineLobby = false
+    @State private var showSettings = false
 
     var body: some View {
         NavigationStack {
@@ -49,6 +50,22 @@ struct HomeView: View {
                         .foregroundStyle(.white.opacity(0.4))
                         .padding(.bottom, 8)
                 }
+
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Image(systemName: "gearshape.fill")
+                                .font(.title3)
+                                .foregroundStyle(.white.opacity(0.6))
+                                .padding(10)
+                        }
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 8)
             }
             .confirmationDialog("AI 난이도", isPresented: $showDifficultyDialog, titleVisibility: .visible) {
                 ForEach(AIPlayer.Difficulty.allCases) { difficulty in
@@ -65,6 +82,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showOnlineLobby) {
                 OnlineLobbyView()
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
             }
         }
         .preferredColorScheme(.dark)

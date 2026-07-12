@@ -2,6 +2,9 @@ import SwiftUI
 
 @main
 struct FeastOfMemoryApp: App {
+    @State private var purchases = PurchaseManager()
+    @State private var ads = AdsManager()
+
     init() {
         // 실제 방송 대국(이세돌 vs 홍진호) 리플레이로 엔진 규칙을 검증 (DEBUG 전용)
         EngineSelfTest.run()
@@ -10,6 +13,18 @@ struct FeastOfMemoryApp: App {
     var body: some Scene {
         WindowGroup {
             HomeView()
+                .environment(purchases)
+                .environment(ads)
+                .task {
+                    purchases.onEntitlementChange = { removed in
+                        ads.adsRemoved = removed
+                    }
+                    ads.adsRemoved = purchases.removeAdsPurchased
+                    purchases.start()
+                    // 홈 화면이 자리 잡은 뒤 ATT 권한 요청 → 광고 SDK 시작
+                    try? await Task.sleep(for: .seconds(1))
+                    ads.startAfterTrackingPrompt()
+                }
         }
     }
 }

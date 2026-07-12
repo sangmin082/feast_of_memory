@@ -6,6 +6,7 @@ import UIKit
 struct GameView: View {
     @State var viewModel: GameViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(AdsManager.self) private var ads
     @State private var showResignAlert = false
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
@@ -37,6 +38,9 @@ struct GameView: View {
             viewModel.memoryViolation()
         }
         .onDisappear { viewModel.cancelAllWork() }
+        .onChange(of: viewModel.engine.phase) { _, newPhase in
+            if newPhase == .finished { ads.gameDidEnd() }
+        }
         .alert("기권하시겠습니까?", isPresented: $showResignAlert) {
             Button("기권", role: .destructive) { viewModel.resign() }
             Button("계속하기", role: .cancel) {}
@@ -162,10 +166,14 @@ struct GameView: View {
             Text(viewModel.banner)
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
-            Button("나가기") { dismiss() }
-                .buttonStyle(.borderedProminent)
-                .tint(.yellow)
-                .foregroundStyle(.black)
+            Button("나가기") {
+                // 게임(암기) 도중에는 광고를 절대 띄우지 않는다 — 노출 지점은 여기뿐
+                ads.maybeShowInterstitialAfterExit()
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.yellow)
+            .foregroundStyle(.black)
         }
         .foregroundStyle(.white)
         .padding(28)
