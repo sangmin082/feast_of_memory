@@ -4,6 +4,8 @@
 #   APP_STORE_CONNECT_KEY_ID / APP_STORE_CONNECT_ISSUER_ID / APP_STORE_CONNECT_KEY(p8 base64)
 #   APPLE_TEAM_ID / MATCH_GIT_URL / MATCH_GIT_BASIC_AUTHORIZATION / MATCH_PASSWORD
 
+require "base64"
+
 default_platform(:ios)
 
 BUNDLE_ID = "com.feastofmemory.game"
@@ -14,11 +16,20 @@ platform :ios do
   lane :beta do
     setup_ci # CI용 임시 키체인 생성
 
+    # Secrets는 base64 인코딩/원문 어느 쪽이든 허용
+    p8 = ENV.fetch("APP_STORE_CONNECT_KEY").strip
+    p8_is_base64 = !p8.include?("BEGIN PRIVATE KEY")
+
+    basic_auth = ENV["MATCH_GIT_BASIC_AUTHORIZATION"].to_s.strip
+    if basic_auth.include?(":") # "계정:PAT" 원문으로 등록한 경우 자동 인코딩
+      ENV["MATCH_GIT_BASIC_AUTHORIZATION"] = Base64.strict_encode64(basic_auth)
+    end
+
     api_key = app_store_connect_api_key(
-      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID"),
-      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
-      key_content: ENV.fetch("APP_STORE_CONNECT_KEY"),
-      is_key_content_base64: true
+      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_ID").strip,
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID").strip,
+      key_content: p8,
+      is_key_content_base64: p8_is_base64
     )
 
     # 배포 인증서 + 프로비저닝 프로파일 생성/동기화 (인증서 저장 repo 사용)
