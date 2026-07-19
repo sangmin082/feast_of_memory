@@ -7,9 +7,8 @@ enum MonetizationConfig {
     /// 잠시 바꾸거나, AdMob 콘솔에서 본인 기기를 테스트 기기로 등록할 것.
     static let interstitialAdUnitID = "ca-app-pub-1063542820867439/5327512121"
 
-    /// 보상형 광고 단위 ID — 1인용 "전체 접시 보기"용.
-    /// ⚠️ 현재는 Google 공식 테스트 ID — AdMob에서 보상형 광고 단위를 만들어 교체할 것.
-    static let rewardedAdUnitID = "ca-app-pub-3940256099942544/1712485313"
+    /// 보상형 광고 단위 ID ("전체보기_보상형") — 1인용 "전체 접시 보기"용.
+    static let rewardedAdUnitID = "ca-app-pub-1063542820867439/2965072662"
 
     /// 광고 제거 비소모성 인앱 결제 상품 ID (App Store Connect에 동일하게 등록)
     static let removeAdsProductID = "com.feastofmemory.game.removeads"
