@@ -51,6 +51,8 @@ const wss = new WebSocketServer({ server: httpServer });
 
 wss.on('connection', (ws) => {
   ws.roomCode = null;
+  ws.isAlive = true;
+  ws.on('pong', () => { ws.isAlive = true; });
 
   ws.on('message', (raw) => {
     let msg;
@@ -107,6 +109,15 @@ wss.on('connection', (ws) => {
     rooms.delete(ws.roomCode);
   });
 });
+
+// 30초마다 ping — 응답 없는(끊긴) 연결을 정리해 상대에게 퇴장을 빨리 알린다
+setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (!ws.isAlive) return ws.terminate();
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
 
 httpServer.listen(PORT, () => {
   console.log(`기억의 만찬 릴레이 서버 실행 중 — ws://0.0.0.0:${PORT}`);
