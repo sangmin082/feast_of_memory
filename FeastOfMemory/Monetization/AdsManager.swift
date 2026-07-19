@@ -23,13 +23,20 @@ final class AdsManager: NSObject {
     private var gamesSinceLastAd = 0
     private var lastAdShownAt: Date?
 
+    /// 보상형 광고가 로드되어 바로 보여줄 수 있는지 (UI 버튼 활성화용)
+    private(set) var rewardedReady = false
+    private var rewardedCompletion: ((Bool) -> Void)?
+    private var rewardEarned = false
+
     #if canImport(GoogleMobileAds)
     private var interstitial: InterstitialAd?
+    private var rewarded: RewardedAd?
     #endif
 
-    /// 앱 시작 후 1회 — ATT 권한을 요청하고 광고 SDK를 초기화한다
+    /// 앱 시작 후 1회 — ATT 권한을 요청하고 광고 SDK를 초기화한다.
+    /// 광고 제거 구매자도 보상형 광고(자발적 시청)는 쓸 수 있으므로 SDK는 항상 시작한다.
     func startAfterTrackingPrompt() {
-        guard !started, !adsRemoved else { return }
+        guard !started else { return }
         #if canImport(AppTrackingTransparency)
         ATTrackingManager.requestTrackingAuthorization { [weak self] _ in
             // 허용/거부와 무관하게 SDK는 시작한다 (거부 시 비맞춤 광고)
@@ -46,6 +53,27 @@ final class AdsManager: NSObject {
         #if canImport(GoogleMobileAds)
         MobileAds.shared.start(completionHandler: nil)
         loadInterstitial()
+        loadRewarded()
+        #endif
+    }
+
+    /// 보상형 광고 표시 — 시청 완료로 보상을 얻으면 completion(true), 중도 이탈/실패면 false
+    func showRewarded(completion: @escaping (Bool) -> Void) {
+        #if canImport(GoogleMobileAds)
+        guard let ad = rewarded, let viewController = Self.topViewController() else {
+            completion(false)
+            loadRewarded()
+            return
+        }
+        rewarded = nil
+        rewardedReady = false
+        rewardedCompletion = completion
+        rewardEarned = false
+        ad.present(from: viewController) { [weak self] in
+            Task { @MainActor in self?.rewardEarned = true }
+        }
+        #else
+        completion(false)
         #endif
     }
 
@@ -101,6 +129,19 @@ final class AdsManager: NSObject {
             }
         }
     }
+
+    private func loadRewarded() {
+        guard rewarded == nil else { return }
+        RewardedAd.load(with: MonetizationConfig.rewardedAdUnitID,
+                        request: Request()) { [weak self] ad, _ in
+            Task { @MainActor in
+                guard let self, let ad else { return }
+                ad.fullScreenContentDelegate = self
+                self.rewarded = ad
+                self.rewardedReady = true
+            }
+        }
+    }
     #endif
 
     private static func topViewController() -> UIViewController? {
@@ -119,11 +160,25 @@ final class AdsManager: NSObject {
 #if canImport(GoogleMobileAds)
 extension AdsManager: FullScreenContentDelegate {
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        loadInterstitial() // 다음 광고 미리 로드
+        if ad is RewardedAd {
+            let completion = rewardedCompletion
+            rewardedCompletion = nil
+            completion?(rewardEarned)
+            loadRewarded()
+        } else {
+            loadInterstitial() // 다음 광고 미리 로드
+        }
     }
 
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
-        loadInterstitial()
+        if ad is RewardedAd {
+            let completion = rewardedCompletion
+            rewardedCompletion = nil
+            completion?(false)
+            loadRewarded()
+        } else {
+            loadInterstitial()
+        }
     }
 }
 #endif
