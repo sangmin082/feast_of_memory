@@ -116,6 +116,26 @@ struct GameView: View {
                 }
                 .foregroundStyle(.white.opacity(0.85))
             }
+
+            if viewModel.canPeekAllPlates {
+                Button {
+                    viewModel.pauseForAd()
+                    ads.showRewarded { earned in
+                        if earned {
+                            viewModel.peekAllPlates()
+                        } else {
+                            viewModel.resumeAfterAd()
+                        }
+                    }
+                } label: {
+                    Label("광고 보고 전체 접시 확인 (\(viewModel.peeksRemaining)회 남음)",
+                          systemImage: "eye.fill")
+                        .font(.caption.bold())
+                }
+                .buttonStyle(.bordered)
+                .tint(.yellow)
+                .disabled(!ads.rewardedReady)
+            }
         }
     }
 

@@ -26,6 +26,8 @@ final class GameViewModel {
     private(set) var secondsLeft: Int = Int(GameEngine.turnTimeLimit)
     /// 암기 위반(스크린샷)으로 몰수패했는지
     private(set) var forfeitedByViolation = false
+    /// 남은 "전체 접시 보기" 횟수 (1인용, 보상형 광고 시청으로 사용)
+    private(set) var peeksRemaining = MonetizationConfig.peeksPerGame
     /// 상대가 나갔는지 (온라인)
     var opponentLeft = false
 
@@ -37,6 +39,15 @@ final class GameViewModel {
     private var matchedPair: (Int, Int)?
 
     var isMyTurn: Bool { engine.currentTurn == localPlayer && engine.phase != .finished }
+    var isSolo: Bool {
+        if case .solo = mode { return true }
+        return false
+    }
+    /// "전체 접시 보기"를 지금 쓸 수 있는가 — 1인용 오픈 단계, 내 차례, 잔여 횟수 있음
+    var canPeekAllPlates: Bool {
+        isSolo && engine.phase == .opening && isMyTurn
+            && !engine.awaitingDeposit && peeksRemaining > 0
+    }
     var myTokens: Int { engine.handTokens[localPlayer.rawValue] }
     var opponentTokens: Int { engine.handTokens[localPlayer.opponent.rawValue] }
     var opponentName: String {
@@ -112,6 +123,45 @@ final class GameViewModel {
     func resign() {
         guard engine.phase != .finished else { return }
         applyLocal(.forfeit)
+    }
+
+    // MARK: - 전체 접시 보기 (보상형 광고 보상, 1인용 전용)
+
+    /// 광고 표시 전 — 턴 타이머를 멈춘다
+    func pauseForAd() {
+        timerTask?.cancel()
+    }
+
+    /// 광고가 보상 없이 끝났을 때 — 타이머를 새로 시작한다
+    func resumeAfterAd() {
+        restartTimerIfNeeded()
+    }
+
+    /// 보상 획득: 모든 접시를 잠시 공개했다가 다시 덮는다
+    func peekAllPlates() {
+        guard canPeekAllPlates else {
+            resumeAfterAd()
+            return
+        }
+        peeksRemaining -= 1
+        firstSelection = nil
+        for plate in engine.plates.indices {
+            reveal(plate: plate, count: engine.plates[plate])
+        }
+        let seconds = Int(MonetizationConfig.peekDurationSeconds)
+        banner = "집사의 배려 — \(seconds)초간 모든 접시가 공개됩니다!"
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(MonetizationConfig.peekDurationSeconds))
+            guard let self else { return }
+            // 진행 중이던 개별 flash 타이머가 잘못 덮지 않도록 세대를 올리고 전부 덮는다
+            for plate in self.engine.plates.indices {
+                self.revealGeneration[plate, default: 0] += 1
+            }
+            self.revealed.removeAll()
+            self.banner = ""
+            self.updateBanner()
+            self.restartTimerIfNeeded()
+        }
     }
 
     // MARK: - 무브 적용
