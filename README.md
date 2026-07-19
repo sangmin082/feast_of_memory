@@ -67,7 +67,7 @@ npm start        # ws://0.0.0.0:8080  (헬스체크: http://localhost:8080)
 npm test         # 통합 테스트
 ```
 
-개발 중 다른 서버를 쓰려면 앱의 설정 ⚙️ → 고급 → 서버 주소에 입력 (비워두면 기본 서버).
+다른 서버를 쓰려면 `OnlineConfig.defaultServerURLString`을 수정해 빌드한다.
 
 ## TestFlight 배포 (Mac 불필요 — GitHub Actions)
 
