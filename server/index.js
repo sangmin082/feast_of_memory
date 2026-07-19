@@ -13,6 +13,7 @@
 //     {"type":"left"}                              상대 퇴장
 //     {"type":"error","message":"..."}             오류
 
+const http = require('http');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 8080;
@@ -41,7 +42,12 @@ function opponentOf(room, ws) {
   return room.sockets[0] === ws ? room.sockets[1] : room.sockets[0];
 }
 
-const wss = new WebSocketServer({ port: PORT });
+// 클라우드(Render 등) 헬스체크용 HTTP 서버 위에 WebSocket을 얹는다
+const httpServer = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+  res.end('기억의 만찬 릴레이 서버 동작 중\n');
+});
+const wss = new WebSocketServer({ server: httpServer });
 
 wss.on('connection', (ws) => {
   ws.roomCode = null;
@@ -102,4 +108,6 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log(`기억의 만찬 릴레이 서버 실행 중 — ws://0.0.0.0:${PORT}`);
+httpServer.listen(PORT, () => {
+  console.log(`기억의 만찬 릴레이 서버 실행 중 — ws://0.0.0.0:${PORT}`);
+});

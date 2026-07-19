@@ -47,17 +47,27 @@ open FeastOfMemory.xcodeproj
 
 ### 2인용 서버
 
+앱에는 기본 서버 주소(`OnlineConfig.defaultServerURLString`)가 내장되어 있어 사용자는 방 코드만 주고받으면 된다.
+
+**클라우드 배포 (Render 무료 티어)**
+
+1. [render.com](https://render.com) 가입 (GitHub 로그인)
+2. New → **Blueprint** → 이 저장소 연결 → `render.yaml`이 자동 인식됨 → Deploy
+3. 배포 완료 후 주소 확인 (서비스 이름이 `feast-of-memory`면 `wss://feast-of-memory.onrender.com`)
+4. 주소가 다르면 `FeastOfMemory/Online/OnlineConfig.swift`의 기본 주소를 수정
+
+무료 티어는 15분간 접속이 없으면 잠들며, 다음 접속 시 깨어나는 데 최대 1분 걸린다 (로비에 안내 문구 표시됨).
+
+**로컬 실행/테스트**
+
 ```bash
 cd server
 npm install
-npm start        # ws://0.0.0.0:8080
+npm start        # ws://0.0.0.0:8080  (헬스체크: http://localhost:8080)
 npm test         # 통합 테스트
 ```
 
-앱의 **둘이 하기 → 서버 주소**에 서버 주소를 입력하세요.
-
-- 같은 Wi-Fi: `ws://<맥의 IP>:8080` (시뮬레이터 2개로 테스트할 땐 `ws://localhost:8080`)
-- 외부 공개 시에는 wss(TLS) 뒤에 두고 `Info.plist`의 ATS 예외를 제거하는 것을 권장합니다.
+개발 중 다른 서버를 쓰려면 앱의 설정 ⚙️ → 고급 → 서버 주소에 입력 (비워두면 기본 서버).
 
 ## TestFlight 배포 (Mac 불필요 — GitHub Actions)
 

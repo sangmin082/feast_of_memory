@@ -4,6 +4,7 @@ import StoreKit
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(PurchaseManager.self) private var purchases
+    @AppStorage("serverURLOverride") private var serverOverride = ""
 
     var body: some View {
         NavigationStack {
@@ -50,6 +51,18 @@ struct SettingsView: View {
                 Section("정보") {
                     LabeledContent("버전",
                                    value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "-")
+                }
+
+                Section {
+                    DisclosureGroup("고급") {
+                        TextField("서버 주소 (비워두면 기본 서버)", text: $serverOverride)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .font(.caption)
+                    }
+                } footer: {
+                    Text("2인용 대전 서버를 직접 운영하는 경우에만 변경하세요.")
                 }
             }
             .navigationTitle("설정")

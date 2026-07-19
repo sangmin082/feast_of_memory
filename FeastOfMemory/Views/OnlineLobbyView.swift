@@ -1,9 +1,10 @@
 import SwiftUI
+import UIKit
 
 /// 2인용 로비 — 방을 만들어 코드를 공유하거나, 받은 코드로 입장한다.
+/// 서버 주소는 앱에 내장되어 있어 사용자에게 노출되지 않는다.
 struct OnlineLobbyView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage("serverURL") private var serverURLString = "ws://localhost:8080"
     @State private var client = RoomClient()
     @State private var joinCode = ""
     @State private var game: GameViewModel?
@@ -11,23 +12,15 @@ struct OnlineLobbyView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("서버") {
-                    TextField("ws://주소:포트", text: $serverURLString)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    Text("server/ 디렉터리의 릴레이 서버 주소를 입력하세요.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section("방 만들기") {
+                Section {
                     Button {
-                        if let url = serverURL { client.createRoom(serverURL: url) }
+                        if let url = OnlineConfig.resolvedServerURL() {
+                            client.createRoom(serverURL: url)
+                        }
                     } label: {
                         Label("새 방 만들기", systemImage: "plus.circle.fill")
                     }
-                    .disabled(serverURL == nil || isBusy)
+                    .disabled(isBusy)
 
                     if case .waitingForOpponent(let code) = client.state {
                         VStack(alignment: .leading, spacing: 8) {
@@ -38,7 +31,13 @@ struct OnlineLobbyView: View {
                                 Text(code)
                                     .font(.system(size: 34, weight: .black, design: .monospaced))
                                     .kerning(6)
+                                    .textSelection(.enabled)
                                 Spacer()
+                                Button {
+                                    UIPasteboard.general.string = code
+                                } label: {
+                                    Image(systemName: "doc.on.doc")
+                                }
                                 ShareLink(item: "기억의 만찬 대결 초대! 방 코드: \(code)") {
                                     Image(systemName: "square.and.arrow.up")
                                 }
@@ -48,6 +47,10 @@ struct OnlineLobbyView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                } header: {
+                    Text("방 만들기")
+                } footer: {
+                    Text("방을 만들면 6자리 코드가 생성됩니다. 코드를 친구에게 보내주세요.")
                 }
 
                 Section("코드로 입장") {
@@ -59,12 +62,12 @@ struct OnlineLobbyView: View {
                                 joinCode = String(newValue.uppercased().prefix(6))
                             }
                         Button("입장") {
-                            if let url = serverURL {
+                            if let url = OnlineConfig.resolvedServerURL() {
                                 client.joinRoom(code: joinCode, serverURL: url)
                             }
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(joinCode.count != 6 || serverURL == nil || isBusy)
+                        .disabled(joinCode.count != 6 || isBusy)
                     }
                 }
 
@@ -75,7 +78,14 @@ struct OnlineLobbyView: View {
                     }
                 }
                 if case .connecting = client.state {
-                    Section { ProgressView("연결 중…") }
+                    Section {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ProgressView("연결 중…")
+                            Text("잠시 걸릴 수 있어요. 서버가 쉬고 있었다면 깨우는 데 최대 1분 정도 걸립니다.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }
             .navigationTitle("둘이 하기")
@@ -103,12 +113,6 @@ struct OnlineLobbyView: View {
             }
         }
         .preferredColorScheme(.dark)
-    }
-
-    private var serverURL: URL? {
-        guard let url = URL(string: serverURLString),
-              url.scheme == "ws" || url.scheme == "wss" else { return nil }
-        return url
     }
 
     private var isBusy: Bool {
