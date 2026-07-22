@@ -13,10 +13,13 @@
 //     {"type":"left"}                              상대 퇴장
 //     {"type":"error","message":"..."}             오류
 
+const fs = require('fs');
 const http = require('http');
+const path = require('path');
 const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 8080;
+const PRIVACY_HTML = fs.readFileSync(path.join(__dirname, 'privacy.html'), 'utf8');
 // 헷갈리기 쉬운 문자(0/O, 1/I)를 뺀 코드 알파벳
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 6;
@@ -44,6 +47,11 @@ function opponentOf(room, ws) {
 
 // 클라우드(Render 등) 헬스체크용 HTTP 서버 위에 WebSocket을 얹는다
 const httpServer = http.createServer((req, res) => {
+  if (req.url === '/privacy' || req.url === '/privacy/') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(PRIVACY_HTML);
+    return;
+  }
   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
   res.end('기억의 만찬 릴레이 서버 동작 중\n');
 });
