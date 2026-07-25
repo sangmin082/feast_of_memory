@@ -26,8 +26,8 @@ final class GameViewModel {
     private(set) var secondsLeft: Int = Int(GameEngine.turnTimeLimit)
     /// 암기 위반(스크린샷)으로 몰수패했는지
     private(set) var forfeitedByViolation = false
-    /// 남은 "전체 접시 보기" 횟수 (1인용, 보상형 광고 시청으로 사용)
-    private(set) var peeksRemaining = MonetizationConfig.peeksPerGame
+    /// 전적을 이미 기록했는지 (중복 기록 방지)
+    private var statsRecorded = false
     /// 상대가 나갔는지 (온라인)
     var opponentLeft = false
 
@@ -43,10 +43,9 @@ final class GameViewModel {
         if case .solo = mode { return true }
         return false
     }
-    /// "전체 접시 보기"를 지금 쓸 수 있는가 — 1인용 오픈 단계, 내 차례, 잔여 횟수 있음
+    /// "전체 접시 보기"를 지금 쓸 수 있는가 — 1인용, 내 차례면 배치 단계부터 언제든 (횟수 무제한)
     var canPeekAllPlates: Bool {
-        isSolo && engine.phase == .opening && isMyTurn
-            && !engine.awaitingDeposit && peeksRemaining > 0
+        isSolo && engine.phase != .finished && isMyTurn && !engine.awaitingDeposit
     }
     var myTokens: Int { engine.handTokens[localPlayer.rawValue] }
     var opponentTokens: Int { engine.handTokens[localPlayer.opponent.rawValue] }
@@ -143,7 +142,6 @@ final class GameViewModel {
             resumeAfterAd()
             return
         }
-        peeksRemaining -= 1
         firstSelection = nil
         for plate in engine.plates.indices {
             reveal(plate: plate, count: engine.plates[plate])
@@ -231,6 +229,18 @@ final class GameViewModel {
             banner = forfeitedByViolation
                 ? "암기 위반! \(name(of: player)) 몰수패"
                 : "\(name(of: player)) 기권"
+        }
+
+        // 게임이 끝났으면 전적 기록 (1회만)
+        if engine.phase == .finished, let winner = engine.winner, !statsRecorded {
+            statsRecorded = true
+            let won = winner == localPlayer
+            switch mode {
+            case .solo(let difficulty):
+                StatsStore.shared.recordSolo(difficulty: difficulty, won: won)
+            case .online:
+                StatsStore.shared.recordOnline(won: won)
+            }
         }
 
         updateBanner(keepOutcomeMessage: true)

@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var showRules = false
     @State private var showOnlineLobby = false
     @State private var showSettings = false
+    @State private var showStats = false
 
     var body: some View {
         NavigationStack {
@@ -36,6 +37,9 @@ struct HomeView: View {
                         }
                         menuButton("둘이 하기", subtitle: "방을 만들고 코드로 초대", icon: "person.2.fill") {
                             showOnlineLobby = true
+                        }
+                        menuButton("전적", subtitle: "승패 기록 보기", icon: "chart.bar.fill") {
+                            showStats = true
                         }
                         menuButton("게임 방법", subtitle: "규칙 읽기", icon: "book.fill") {
                             showRules = true
@@ -85,6 +89,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showStats) {
+                StatsView()
             }
         }
         .preferredColorScheme(.dark)
