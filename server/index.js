@@ -58,6 +58,12 @@ const httpServer = http.createServer((req, res) => {
     res.end('google.com, pub-1063542820867439, DIRECT, f08c47fec0942fa0\n');
     return;
   }
+  // 크롤러 허용 — 없으면 Google이 app-ads.txt 크롤링을 차단된 것으로 판단한다
+  if (req.url === '/robots.txt') {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('User-agent: *\nAllow: /\n');
+    return;
+  }
   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
   res.end('기억의 만찬 릴레이 서버 동작 중\n');
 });
