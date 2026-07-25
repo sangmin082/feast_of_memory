@@ -15,8 +15,6 @@ enum MonetizationConfig {
 
     /// 보상형 광고 시청 시 전체 접시 공개 시간 (초)
     static let peekDurationSeconds: TimeInterval = 5
-    /// 판당 전체 공개 사용 가능 횟수 (1인용 전용)
-    static let peeksPerGame = 1
 
     /// 전면 광고 노출 빈도: N판 종료마다 1회
     static let gamesPerInterstitial = 2

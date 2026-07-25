@@ -128,8 +128,7 @@ struct GameView: View {
                         }
                     }
                 } label: {
-                    Label("광고 보고 전체 접시 확인 (\(viewModel.peeksRemaining)회 남음)",
-                          systemImage: "eye.fill")
+                    Label("광고 보고 전체 접시 확인", systemImage: "eye.fill")
                         .font(.caption.bold())
                 }
                 .buttonStyle(.bordered)
