@@ -52,6 +52,12 @@ const httpServer = http.createServer((req, res) => {
     res.end(PRIVACY_HTML);
     return;
   }
+  // AdMob app-ads.txt (광고 인벤토리 판매 권한 증명)
+  if (req.url === '/app-ads.txt') {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('google.com, pub-1063542820867439, DIRECT, f08c47fec0942fa0\n');
+    return;
+  }
   res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
   res.end('기억의 만찬 릴레이 서버 동작 중\n');
 });
