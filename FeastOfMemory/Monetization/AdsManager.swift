@@ -115,7 +115,7 @@ final class AdsManager: NSObject {
 
     #if canImport(GoogleMobileAds)
     private func loadInterstitial() {
-        guard !adsRemoved else { return }
+        guard !adsRemoved, interstitial == nil else { return }
         InterstitialAd.load(with: MonetizationConfig.interstitialAdUnitID,
                             request: Request()) { [weak self] ad, error in
             Task { @MainActor in
@@ -125,6 +125,7 @@ final class AdsManager: NSObject {
                     self.interstitial = ad
                 } else if error != nil {
                     self.interstitial = nil
+                    self.scheduleRetry(rewarded: false)
                 }
             }
         }
@@ -135,10 +136,39 @@ final class AdsManager: NSObject {
         RewardedAd.load(with: MonetizationConfig.rewardedAdUnitID,
                         request: Request()) { [weak self] ad, _ in
             Task { @MainActor in
-                guard let self, let ad else { return }
-                ad.fullScreenContentDelegate = self
-                self.rewarded = ad
-                self.rewardedReady = true
+                guard let self else { return }
+                if let ad {
+                    ad.fullScreenContentDelegate = self
+                    self.rewarded = ad
+                    self.rewardedReady = true
+                } else {
+                    // 로드 실패(광고 재고 없음 등) — 잠시 후 재시도
+                    self.scheduleRetry(rewarded: true)
+                }
+            }
+        }
+    }
+
+    private var rewardedRetryScheduled = false
+    private var interstitialRetryScheduled = false
+
+    private func scheduleRetry(rewarded isRewarded: Bool) {
+        if isRewarded {
+            guard !rewardedRetryScheduled else { return }
+            rewardedRetryScheduled = true
+        } else {
+            guard !interstitialRetryScheduled else { return }
+            interstitialRetryScheduled = true
+        }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(30))
+            guard let self else { return }
+            if isRewarded {
+                self.rewardedRetryScheduled = false
+                self.loadRewarded()
+            } else {
+                self.interstitialRetryScheduled = false
+                self.loadInterstitial()
             }
         }
     }

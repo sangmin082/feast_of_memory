@@ -128,7 +128,8 @@ struct GameView: View {
                         }
                     }
                 } label: {
-                    Label("광고 보고 전체 접시 확인", systemImage: "eye.fill")
+                    Label(ads.rewardedReady ? "광고 보고 전체 접시 확인" : "광고 준비 중…",
+                          systemImage: ads.rewardedReady ? "eye.fill" : "hourglass")
                         .font(.caption.bold())
                 }
                 .buttonStyle(.bordered)
