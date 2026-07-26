@@ -4,6 +4,12 @@ on:
   workflow_dispatch: # Actions 탭에서 수동 실행
   push:
     branches: [main] # main에 푸시(머지)될 때마다 TestFlight에 새 빌드 업로드
+    paths: # 앱 관련 파일이 바뀔 때만 (서버/문서 변경은 빌드 불필요)
+      - "FeastOfMemory/**"
+      - "FeastOfMemory.xcodeproj/**"
+      - "fastlane/**"
+      - "Gemfile*"
+      - ".github/workflows/testflight.yml"
 
 jobs:
   build-and-upload:
