@@ -47,6 +47,24 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 32)
 
+                    // 크로스 프로모션 — 같은 데스게임 시리즈
+                    Link(destination: URL(string: "https://apps.apple.com/app/id6800019846")!) {
+                        HStack(spacing: 12) {
+                            Text("💘").font(.title3)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("러브 윈즈 올").font(.subheadline.bold())
+                                Text("데스게임 가위바위보 심리전 — 신작 출시!").font(.caption2).opacity(0.6)
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.up.forward.app").font(.caption).opacity(0.5)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 12).fill(.white.opacity(0.05)))
+                    }
+                    .padding(.horizontal, 32)
+
                     Spacer()
 
                     Text("⚠️ 토큰 개수를 기록하면 몰수패됩니다")
